@@ -114,12 +114,12 @@ export function buildDeliveryChecker() {
     const item = (ok, text) => { const li = el('li', '', `${ok ? 'Yes' : 'No'} - ${text}`); li.dataset.ok = ok ? '1' : '0'; lines.append(li); };
     item(status.enabled, 'Delivery Tags is on, so the instruction is sent to the story model with each message');
     const scriptSwitch = (id, entry) => {
-        if (!entry.installed) return;
-        const toggle = el('button', 'menu_button', entry.on ? 'Turn off' : 'Turn on');
+        if (!entry.installed || entry.on) return;
+        const toggle = el('button', 'menu_button', 'Turn on');
         toggle.type = 'button';
         toggle.style.marginLeft = '8px';
         toggle.addEventListener('click', () => {
-            setDeliveryScriptOn(id, !entry.on);
+            setDeliveryScriptOn(id, true);
             toggle.closest('.sillynpc-delivery-check')?.replaceWith(buildDeliveryChecker());
         });
         lines.lastChild.append(toggle);
