@@ -83,7 +83,7 @@ export function deliveryStatus() {
  * Writes the three regex scripts (display, saver, inline display) into SillyTavern's list for the current tag names and switch. The
  * context saver keeps whatever on/off and depth the owner gave it; it starts on.
  */
-export function syncDeliveryScripts() {
+export function syncDeliveryScripts({ force = false } = {}) {
     const list = Array.isArray(extension_settings.regex) ? extension_settings.regex : [];
     const settings = getSettings();
     const scripts = deliveryScripts(toneTable(), {
@@ -95,7 +95,14 @@ export function syncDeliveryScripts() {
     });
     // While the feature has never been on, only the saver is written (it also hides [sfx:] tags); the display scripts wait.
     const neverOn = !deliveryEnabled() && !list.some(s => s?.id === DELIVERY_SCRIPT_IDS.display);
-    const toWrite = neverOn ? scripts.filter(s => s.id === DELIVERY_SCRIPT_IDS.saver) : scripts;
+    const toWrite = (neverOn ? scripts.filter(s => s.id === DELIVERY_SCRIPT_IDS.saver) : scripts).map(s => {
+        // The two display scripts keep the on/off the owner gave them (in the Regex list or here). Only the Delivery Tags
+        // switch itself (force) sets them; otherwise every start-up, which on a phone happens between messages, switched
+        // them off again whenever that setting was off.
+        if (force || s.id === DELIVERY_SCRIPT_IDS.saver) return s;
+        const there = list.find(x => x?.id === s.id);
+        return there && typeof there.disabled === 'boolean' ? { ...s, disabled: there.disabled } : s;
+    });
     // The four tracker savers ship with the extension: any that is missing is added, one that is there is left as it is.
     const withSavers = withTrackerSavers(mergeRegexScripts(list, toWrite).merged);
     extension_settings.regex = withSavers.list;
@@ -129,7 +136,7 @@ export function applyDeliveryStyle() {
 }
 
 /** Both at once: what the toggle and a change to the tag table call. */
-export function applyDelivery() {
+export function applyDelivery({ force = false } = {}) {
     applyDeliveryPrompt();
-    syncDeliveryScripts();
+    syncDeliveryScripts({ force });
 }

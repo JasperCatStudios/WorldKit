@@ -221,7 +221,7 @@ export function renderWritingRulesView(view, onReprocessMessages) {
             + 'The saved message keeps the tags; two SillyTavern regex scripts (see the Regex list) show them styled and the look '
             + 'of each is set under Appearance. A voice that understands them (Eleven v4, v4 Turbo, v3) is told the delivery with the '
             + 'closing tag dropped; any other voice reads only the words. Smaller models sometimes forget a tag, and then the line shows plain.',
-        onChange: () => { applyDelivery(); rerender(); },
+        onChange: () => { applyDelivery({ force: true }); rerender(); },
     }));
     if (getSettings().deliveryTagsEnabled) {
         view.append(buildPromptEditor(promptById('deliveryTags')));
