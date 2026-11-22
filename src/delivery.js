@@ -62,6 +62,15 @@ export function applyDeliveryPrompt() {
     setExtensionPrompt(DELIVERY_KEY, text, POSITIONS[o.position], o.depth, false, ROLES[o.role]);
 }
 
+/** Switches one of the delivery display scripts on or off in the Regex list (the checker's button). */
+export function setDeliveryScriptOn(id, on) {
+    const script = (Array.isArray(extension_settings.regex) ? extension_settings.regex : []).find(s => s?.id === id);
+    if (!script) return false;
+    script.disabled = !on;
+    saveSettingsDebounced();
+    return true;
+}
+
 /** What is installed and what would be sent, for the settings page. */
 export function deliveryStatus() {
     const list = Array.isArray(extension_settings.regex) ? extension_settings.regex : [];
@@ -95,6 +104,11 @@ export function syncDeliveryScripts({ force = false } = {}) {
     });
     // While the feature has never been on, only the saver is written (it also hides [sfx:] tags); the display scripts wait.
     const neverOn = !deliveryEnabled() && !list.some(s => s?.id === DELIVERY_SCRIPT_IDS.display);
+    // Once: earlier versions left the display scripts switched off while Delivery Tags was on. Switch them on a single time.
+    if (!force && deliveryEnabled() && settings.deliveryScriptsRepaired !== true) {
+        force = true;
+        settings.deliveryScriptsRepaired = true;
+    }
     const toWrite = (neverOn ? scripts.filter(s => s.id === DELIVERY_SCRIPT_IDS.saver) : scripts).map(s => {
         // The two display scripts keep the on/off the owner gave them (in the Regex list or here). Only the Delivery Tags
         // switch itself (force) sets them; otherwise every start-up, which on a phone happens between messages, switched

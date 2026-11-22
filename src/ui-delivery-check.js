@@ -7,7 +7,8 @@ import { engineOf, engineReadsAudioTags, ENGINES } from './tts-engines.js';
 import {
     DELIVERY_POSITIONS, DELIVERY_ROLES, normalizeDeliveryInject, describeDeliveryPlacement,
 } from './delivery-core.js';
-import { deliveryInject, deliveryStatus, applyDelivery } from './delivery.js';
+import { deliveryInject, deliveryStatus, applyDelivery, setDeliveryScriptOn } from './delivery.js';
+import { DELIVERY_SCRIPT_IDS } from './delivery-core.js';
 
 /**
  * Writing Rules, Delivery Tags (fork): where the instruction is injected, and a checker that shows
@@ -112,12 +113,25 @@ export function buildDeliveryChecker() {
     const lines = el('ul', 'sillynpc-delivery-status');
     const item = (ok, text) => { const li = el('li', '', `${ok ? 'Yes' : 'No'} - ${text}`); li.dataset.ok = ok ? '1' : '0'; lines.append(li); };
     item(status.enabled, 'Delivery Tags is on, so the instruction is sent to the story model with each message');
+    const scriptSwitch = (id, entry) => {
+        if (!entry.installed) return;
+        const toggle = el('button', 'menu_button', entry.on ? 'Turn off' : 'Turn on');
+        toggle.type = 'button';
+        toggle.style.marginLeft = '8px';
+        toggle.addEventListener('click', () => {
+            setDeliveryScriptOn(id, !entry.on);
+            toggle.closest('.sillynpc-delivery-check')?.replaceWith(buildDeliveryChecker());
+        });
+        lines.lastChild.append(toggle);
+    };
     item(status.display.installed && status.display.on, status.display.installed
         ? `the display script is installed and ${status.display.on ? 'on' : 'switched off'} in the Regex list (it shows tagged lines styled)`
         : 'the display script is not installed yet (switching Delivery Tags on installs it)');
+    scriptSwitch(DELIVERY_SCRIPT_IDS.display, status.display);
     item(status.inline.installed && status.inline.on, status.inline.installed
         ? `the standalone-tag script is installed and ${status.inline.on ? 'on' : 'switched off'} in the Regex list (it hides [pause], [sighs] and the like in the chat)`
         : 'the standalone-tag script is not installed yet (switching Delivery Tags on installs it)');
+    scriptSwitch(DELIVERY_SCRIPT_IDS.inline, status.inline);
     item(status.saver.installed && status.saver.on, status.saver.installed
         ? `the context saver is ${status.saver.on ? 'on: tags (both kinds) and [sfx:] tags are hidden from older messages sent to the model' : 'off: older messages keep their tags when sent to the model'}`
         : 'the context saver is not installed yet');
