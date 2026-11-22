@@ -29,7 +29,8 @@ import { noteActivatedLore } from './src/activated-lore.js';
 import { setDebugLogging } from './src/constants.js';
 import { describeChatConnection } from './src/utils.js';
 import { applyDialogueFormatPrompt } from './src/dialogue-format.js';
-import { applyDeliveryPrompt, syncDeliveryScripts, applyDeliveryStyle } from './src/delivery.js';
+import { applyDeliveryPrompt, syncDeliveryScripts, applyDeliveryStyle, ensureDeliveryScriptsOn } from './src/delivery.js';
+import { reloadCurrentChat } from '../../../../script.js';
 import { placeWritingPrompt } from './src/prompt-slot.js';
 import { applyBanList } from './src/banlist.js';
 import { applyHistoryInjection } from './src/history-inject.js';
@@ -350,6 +351,7 @@ jQuery(async () => {
             try {
                 applyDialogueFormatPrompt();
                 applyDeliveryPrompt();
+                ensureDeliveryScriptsOn();
                 applyBanList();
                 applyHistoryInjection();
             } catch (err) {
@@ -373,6 +375,11 @@ jQuery(async () => {
             }
         });
 
+        // A connection profile can carry a Regex preset, which switches off every script not in it, ours included. Put the
+        // delivery scripts back on and redraw the chat, which was drawn while they were off.
+        eventSource.on(event_types.CONNECTION_PROFILE_LOADED, async () => {
+            try { if (ensureDeliveryScriptsOn()) await reloadCurrentChat(); } catch (err) { debugLog('Delivery scripts not restored after a profile change', err); }
+        });
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, onMessageRendered);
         eventSource.on(event_types.USER_MESSAGE_RENDERED, onMessageRendered);
         eventSource.on(event_types.MESSAGE_UPDATED, onMessageRendered);

@@ -71,6 +71,22 @@ export function setDeliveryScriptOn(id, on) {
     return true;
 }
 
+/**
+ * While Delivery Tags is on, the display and inline scripts must be on. SillyTavern's own Regex presets (one can be bound to a
+ * connection profile) switch off every script that is not in the preset, which is how these two kept going off when a profile
+ * was loaded. Called after such a change; returns true when it had to switch something back on.
+ */
+export function ensureDeliveryScriptsOn() {
+    if (!deliveryEnabled() || !Array.isArray(extension_settings.regex)) return false;
+    let changed = false;
+    for (const id of [DELIVERY_SCRIPT_IDS.display, DELIVERY_SCRIPT_IDS.inline]) {
+        const script = extension_settings.regex.find(s => s?.id === id);
+        if (script && script.disabled === true) { script.disabled = false; changed = true; }
+    }
+    if (changed) saveSettingsDebounced();
+    return changed;
+}
+
 /** What is installed and what would be sent, for the settings page. */
 export function deliveryStatus() {
     const list = Array.isArray(extension_settings.regex) ? extension_settings.regex : [];
